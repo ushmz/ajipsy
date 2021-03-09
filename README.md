@@ -28,5 +28,5 @@ You can also specify your status as you like by `-t` and `-e` option.
 Show help
 
 ```sh
-repo [-h|--help]
+ [-h|--help]
 ```
