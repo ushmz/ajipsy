@@ -55,8 +55,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .arg(Arg::with_name("out")
              .help("Set status 'out'")
              .long("out"))
+        .arg(Arg::with_name("reset")
+             .help("Reset status")
+             .long("reset")
+             .short("r"))
        .group(ArgGroup::with_name("preset")
-            .args(&["room2525", "room2719", "home", "out"]))
+            .args(&["room2525", "room2719", "home", "out", "reset"]))
         .arg(Arg::from_usage("[TEXT] -t --text [TEXT] 'Status text'"))
         .arg(Arg::from_usage("[EMOJI] -e --emoji [EMOJI] 'Status emoticon(like :school:)'"));
 
@@ -70,7 +74,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     matches.is_present("room2719"),
                                     matches.is_present("home"),
                                     matches.is_present("out"));
-        println!("{}, {}, {}, {}", r25, r27, hm, out);
         status_text = if r25 {"Room2525"} else if r27 {"Room2719"} else if hm {"Home"} else if out {"Going out"} else {""};
         status_emoji = if r25 {":school:"} else if r27 {":school:"} else if hm {":house:"} else if out {":walking:"} else {""};
     }
