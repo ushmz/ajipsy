@@ -15,7 +15,8 @@ AJIPSY_USERID=${YOUR_MEMBERID}
 ajipsy --room2525 # Set Slack Status 'Room2525'
 ajipsy --room2719 # Set Slack Status 'Room2719'
 ajipsy --home     # Set SLack Status 'Home'
-ajipsy --out     # Set SLack Status 'Going out'
+ajipsy --out      # Set SLack Status 'Going out'
+ajipsy --reset    # Reset Slack Status
 ```
 
 You can also specify your status as you like by `-t` and `-e` option.
