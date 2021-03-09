@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[macro_use]
 extern crate clap;
-use clap::{Arg, ArgGroup};
+use clap::{AppSettings, Arg, ArgGroup};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ProfileStatus {
@@ -42,27 +42,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     };
  
+    let r25_help = format!("Set status '{} Room 2525'", '\u{1f3eb}');
+    let r27_help = format!("Set status '{} Room 2719'", '\u{1f3eb}');
+    let home_help = format!("Set status '{} Home'", '\u{1f3e0}');
+    let out_help = format!("Set status '{} Going out'", '\u{1f6b6}');
+
     let cmd = app_from_crate!()
         .arg(Arg::with_name("room2525")
-             .help("Set status 'Room 2525'")
+             .help(&r25_help)
              .long("room2525"))
         .arg(Arg::with_name("room2719")
-             .help("Set status 'Room 2719'")
+             .help(&r27_help)
              .long("room2719"))
         .arg(Arg::with_name("home")
-             .help("Set status 'home'")
+             .help(&home_help)
              .long("home"))
         .arg(Arg::with_name("out")
-             .help("Set status 'out'")
+             .help(&out_help)
              .long("out"))
         .arg(Arg::with_name("reset")
              .help("Reset status")
              .long("reset")
              .short("r"))
-       .group(ArgGroup::with_name("preset")
+        .group(ArgGroup::with_name("preset")
             .args(&["room2525", "room2719", "home", "out", "reset"]))
-        .arg(Arg::from_usage("[TEXT] -t --text [TEXT] 'Status text'"))
-        .arg(Arg::from_usage("[EMOJI] -e --emoji [EMOJI] 'Status emoticon(like :school:)'"));
+        .arg(Arg::from_usage("[TEXT] -t --text [TEXT] 'Status text (This override preset status text)'"))
+        .arg(Arg::from_usage("[EMOJI] -e --emoji [EMOJI] 'Status emoticon, like `:school:` (This override preset status emoji)'"))
+        .setting(AppSettings::DeriveDisplayOrder);
 
     let matches = cmd.get_matches();
 
