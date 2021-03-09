@@ -1,27 +1,27 @@
 use std::env;
 use std::process;
-use reqwest::{Client, Error, Response, StatusCode};
-use serde::{Deserialize, Serialize};
+use reqwest::Client;
+use serde::Serialize;
 
 #[macro_use]
 extern crate clap;
-use clap::{AppSettings, Arg, ArgGroup};
+use clap::{App, AppSettings, Arg};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Debug)]
 struct ProfileStatus {
     status_text: String,
     status_emoji: String,
     // status_expiration: String
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Debug)]
 struct ProfileRequest {
     user: String,
     profile: ProfileStatus
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() {
 
     let access_token = "AJIPSY_ACCESS_TOKEN";
     let member_id = "AJIPSY_MEMBERID";
@@ -48,72 +48,61 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let out_help = format!("Set status '{} Going out'", '\u{1f6b6}');
 
     let cmd = app_from_crate!()
-        .arg(Arg::with_name("room2525")
-             .help(&r25_help)
-             .long("room2525"))
-        .arg(Arg::with_name("room2719")
-             .help(&r27_help)
-             .long("room2719"))
-        .arg(Arg::with_name("home")
-             .help(&home_help)
-             .long("home"))
-        .arg(Arg::with_name("out")
-             .help(&out_help)
-             .long("out"))
-        .arg(Arg::with_name("reset")
-             .help("Reset status")
-             .long("reset")
-             .short("r"))
-        .group(ArgGroup::with_name("preset")
-            .args(&["room2525", "room2719", "home", "out", "reset"]))
-        .arg(Arg::from_usage("[TEXT] -t --text [TEXT] 'Status text (This override preset status text)'"))
-        .arg(Arg::from_usage("[EMOJI] -e --emoji [EMOJI] 'Status emoticon, like `:school:` (This override preset status emoji)'"))
+        .subcommand(App::new("room2525")
+                    .about(&*r25_help))
+        .subcommand(App::new("room2719")
+                    .about(&*r27_help))
+        .subcommand(App::new("home")
+                    .about(&*home_help))
+        .subcommand(App::new("out")
+                    .about(&*out_help))
+        .subcommand(App::new("reset")
+                    .about("Reset Status"))
+        .arg(Arg::from_usage("[TEXT] -t --text [TEXT] 'Custom status text'"))
+        .arg(Arg::from_usage("[EMOJI] -e --emoji [EMOJI] 'Custom status emoticon, like `:school:`'"))
         .setting(AppSettings::DeriveDisplayOrder);
 
     let matches = cmd.get_matches();
 
-    let mut status_text: &str = "";
-    let mut status_emoji: &str = "";
-
-    if matches.is_present("preset") {
-        let ( r25, r27, hm, out) = (matches.is_present("room2525"),
-                                    matches.is_present("room2719"),
-                                    matches.is_present("home"),
-                                    matches.is_present("out"));
-        status_text = if r25 {"Room2525"} else if r27 {"Room2719"} else if hm {"Home"} else if out {"Going out"} else {""};
-        status_emoji = if r25 {":school:"} else if r27 {":school:"} else if hm {":house:"} else if out {":walking:"} else {""};
+    if let Some(ref _matches) = matches.subcommand_matches("room2525") {
+        let req = build_request(&target, "Room2525", ":school:");
+        post_status(&token, &req).await;
     }
 
-    match matches.value_of("TEXT") {
-        Some(val) => status_text = val,
-        None => {}
-    };
-
-    match matches.value_of("EMOJI") {
-        Some(val) => status_emoji = val,
-        None => {}
-    };
-
-    let req = ProfileRequest {
-        user: target.to_string(),
-        profile: ProfileStatus {
-            status_text: status_text.to_string(),
-            status_emoji: assert_emoji_string(status_emoji.to_string())
-        }
-    };
-
-    let res = post_status(&token, &req).await?;
-    match res.status() {
-        StatusCode::OK => {
-            println!("Success!!");
-            Ok(())
-        }
-        s => {
-            println!("Error: Status code {:?}", s);
-            process::exit(1)
-        }
+    if let Some(ref _matches) = matches.subcommand_matches("room2719") {
+        let req = build_request(&target, "Room2719", ":school:");
+        post_status(&token, &req).await;
     }
+
+    if let Some(ref _matches) = matches.subcommand_matches("home") {
+        let req = build_request(&target, "Home", ":house:");
+        post_status(&token, &req).await;
+    }
+
+    if let Some(ref _matches) = matches.subcommand_matches("out") {
+        let req = build_request(&target, "Going out", ":walking:");
+        post_status(&token, &req).await;
+    }
+
+    if let Some(ref _matches) = matches.subcommand_matches("reset") {
+        let req = build_request(&target, "", "");
+        post_status(&token, &req).await;
+    }
+
+    let custom_text = match matches.value_of("TEXT") {
+        Some(val) => val,
+        None => ""
+    };
+
+    let custom_emoji = match matches.value_of("EMOJI") {
+        Some(val) => val,
+        None => ""
+    };
+
+   let req = build_request(&target, &custom_text, &custom_emoji);
+   post_status(&token, &req).await
 }
+
 
 fn assert_emoji_string(s: String) -> String {
     // Not Smart!!!!!
@@ -133,13 +122,33 @@ fn assert_emoji_string(s: String) -> String {
     };
 }
 
-async fn post_status(token: &str, request: &ProfileRequest) -> Result<Response, Error> {
+fn build_request(user: &str, text: &str, emoji: &str) -> ProfileRequest {
+    ProfileRequest {
+        user: user.to_string(),
+        profile: ProfileStatus {
+            status_text: text.to_string(),
+            status_emoji: assert_emoji_string(emoji.to_string())
+        }
+    }
+}
+
+async fn post_status(token: &str, request: &ProfileRequest) {
     let endpoint = "https://slack.com/api/users.profile.set";
     let client = Client::new();
-    client.post(endpoint)
+    let res = client.post(endpoint)
         .header(reqwest::header::CONTENT_TYPE, "application/json")
         .bearer_auth(token)
         .json(request)
         .send()
-        .await
+        .await;
+        match res {
+            Ok(_) => {
+                println!("Success!!");
+                process::exit(0);
+            }
+            Err(e) => {
+                println!("Failed... {:?}", e);
+                process::exit(1);
+            }
+        };
 }
