@@ -62,63 +62,54 @@ async fn main() {
 
     let matches = cmd.get_matches();
 
-    if let Some(ref _matches) = matches.subcommand_matches("room2525") {
+    if let Some(_matches) = matches.subcommand_matches("room2525") {
         let req = build_request(&target, "Room2525", ":school:");
         post_status(&token, &req).await;
     }
 
-    if let Some(ref _matches) = matches.subcommand_matches("room2719") {
+    if let Some(_matches) = matches.subcommand_matches("room2719") {
         let req = build_request(&target, "Room2719", ":school:");
         post_status(&token, &req).await;
     }
 
-    if let Some(ref _matches) = matches.subcommand_matches("home") {
+    if let Some(_matches) = matches.subcommand_matches("home") {
         let req = build_request(&target, "Home", ":house:");
         post_status(&token, &req).await;
     }
 
-    if let Some(ref _matches) = matches.subcommand_matches("out") {
+    if let Some(_matches) = matches.subcommand_matches("out") {
         let req = build_request(&target, "Going out", ":walking:");
         post_status(&token, &req).await;
     }
 
-    if let Some(ref _matches) = matches.subcommand_matches("reset") {
+    if let Some(_matches) = matches.subcommand_matches("reset") {
         let req = build_request(&target, "", "");
         post_status(&token, &req).await;
     }
 
-    let custom_text = match matches.value_of("TEXT") {
-        Some(val) => val,
-        None => "",
-    };
+    let custom_text = matches.value_of("TEXT").unwrap_or("");
 
-    let custom_emoji = match matches.value_of("EMOJI") {
-        Some(val) => val,
-        None => "",
-    };
+    let custom_emoji = matches.value_of("EMOJI").unwrap_or("");
 
-    let req = build_request(&target, &custom_text, &custom_emoji);
+    let req = build_request(&target, custom_text, custom_emoji);
+
     post_status(&token, &req).await
 }
 
 fn assert_emoji_string(s: String) -> String {
-    // Not Smart!!!!!
     if s.is_empty() {
         return s;
     }
-    if s.starts_with(":") {
-        if s.ends_with(":") {
-            return s;
-        } else {
-            return format!("{}:", s);
-        }
-    } else {
-        if s.ends_with(":") {
-            return format!(":{}", s);
-        } else {
-            return format!(":{}:", s);
-        }
+
+    if !s.starts_with(':') {
+        assert_emoji_string(format!(":{}", s));
+    }
+
+    if !s.ends_with(':') {
+        assert_emoji_string(format!("{}:", s));
     };
+
+    s
 }
 
 fn build_request(user: &str, text: &str, emoji: &str) -> ProfileRequest {
@@ -141,6 +132,7 @@ async fn post_status(token: &str, request: &ProfileRequest) {
         .json(request)
         .send()
         .await;
+
     match res {
         Ok(_) => {
             println!("Success!!");
