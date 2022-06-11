@@ -1,5 +1,6 @@
 [package]
 name = "ajipsy"
+description = "Simple command to set Slack status."
 version = "0.1.0"
 authors = ["Yusuke Shimizu <44394399+ushmz@users.noreply.github.com>"]
 edition = "2018"
@@ -12,4 +13,3 @@ reqwest = { version = "0.11.1", features = ["json"] }
 serde = { version = "1.0.124", features = ["derive"] }
 serde_json = "1.0.64"
 tokio = { version = "1.2.0", features = ["full"] }
-
